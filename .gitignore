@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+*.log
+coverage/
+uploads/images/*
+uploads/texts/*
+uploads/temp/*
+!uploads/.gitkeep
+.yarn/cache
+.yarn/unplugged
+.yarn/install-state.gz
+bash.exe.stackdump
+PROJECT_BRIEF.md
