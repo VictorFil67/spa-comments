@@ -17,12 +17,14 @@ import { v4 as uuid } from 'uuid';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto, QueryCommentsDto } from './dto';
 import { UploadsService } from '../uploads/uploads.service';
+import { CommentsGateway } from './comments.gateway';
 
 @Controller('comments')
 export class CommentsController {
   constructor(
     private readonly commentsService: CommentsService,
     private readonly uploadsService: UploadsService,
+    private readonly commentsGateway: CommentsGateway,
   ) {}
 
   @Post()
@@ -72,6 +74,7 @@ export class CommentsController {
       comment.attachment = attachment;
     }
 
+    this.commentsGateway.notifyNewComment(comment);
     return comment;
   }
 
