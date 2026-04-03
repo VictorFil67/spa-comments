@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
+import { CommentsGateway } from './comments.gateway';
 import { Comment } from '../entities/comment.entity';
 import { User } from '../entities/user.entity';
 import { Attachment } from '../entities/attachment.entity';
@@ -15,7 +16,7 @@ import { UploadsModule } from '../uploads/uploads.module';
     UploadsModule,
   ],
   controllers: [CommentsController],
-  providers: [CommentsService],
+  providers: [CommentsService, CommentsGateway],
   exports: [CommentsService],
 })
 export class CommentsModule {}
