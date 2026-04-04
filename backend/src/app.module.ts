@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheModule } from '@nestjs/cache-manager';
+import { BullModule } from '@nestjs/bull';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AppController } from './app.controller';
@@ -8,6 +10,8 @@ import { AppService } from './app.service';
 import { CommentsModule } from './comments/comments.module';
 import { CaptchaModule } from './captcha/captcha.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { AuthModule } from './auth/auth.module';
+import { cacheConfig } from './config/cache.config';
 import { User } from './entities/user.entity';
 import { Comment } from './entities/comment.entity';
 import { Attachment } from './entities/attachment.entity';
@@ -29,6 +33,22 @@ import { Attachment } from './entities/attachment.entity';
         synchronize: true,
       }),
     }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: cacheConfig,
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        redis: {
+          host: config.get('REDIS_HOST', 'localhost'),
+          port: config.get<number>('REDIS_PORT', 6379),
+        },
+      }),
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
@@ -36,6 +56,7 @@ import { Attachment } from './entities/attachment.entity';
     CommentsModule,
     CaptchaModule,
     UploadsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
