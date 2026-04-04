@@ -2,9 +2,12 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { Comment } from '../entities/comment.entity';
 import { User } from '../entities/user.entity';
 import { CreateCommentDto, QueryCommentsDto } from './dto';
@@ -19,6 +22,8 @@ export class CommentsService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly captchaService: CaptchaService,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(dto: CreateCommentDto): Promise<Comment> {
@@ -76,11 +81,22 @@ export class CommentsService {
       parentId: dto.parentId || null,
     });
 
-    return this.commentRepo.save(comment);
+    const saved = await this.commentRepo.save(comment);
+
+    // invalidate comments cache on new comment
+    await this.invalidateCommentsCache();
+
+    return saved;
   }
 
   async findTopLevel(query: QueryCommentsDto) {
     const { sortBy, order, page, limit } = query;
+    const cacheKey = `comments:${sortBy}:${order}:${page}:${limit}`;
+
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const sortField =
       sortBy === 'username' || sortBy === 'email'
@@ -104,13 +120,17 @@ export class CommentsService {
       }),
     );
 
-    return {
+    const result = {
       data: commentsWithChildren,
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     };
+
+    await this.cacheManager.set(cacheKey, result, 60000);
+
+    return result;
   }
 
   private async getChildrenRecursive(parentId: number): Promise<Comment[]> {
@@ -141,30 +161,11 @@ export class CommentsService {
     return comment;
   }
 
-  async attachFile(
-    commentId: number,
-    attachmentData: Partial<import('../entities/attachment.entity').Attachment>,
-  ) {
-    const comment = await this.commentRepo.findOne({
-      where: { id: commentId },
-      relations: ['attachment'],
-    });
-
-    if (!comment) {
-      throw new NotFoundException(`Comment #${commentId} not found`);
+  private async invalidateCommentsCache() {
+    try {
+      await (this.cacheManager as any).reset();
+    } catch {
+      // cache reset not supported, keys will expire via TTL
     }
-
-    if (comment.attachment) {
-      throw new BadRequestException('Comment already has an attachment');
-    }
-
-    const attachmentRepo = this.commentRepo.manager.getRepository(
-      'attachments',
-    );
-    const attachment = attachmentRepo.create({
-      ...attachmentData,
-      commentId,
-    });
-    return attachmentRepo.save(attachment);
   }
 }
