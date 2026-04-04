@@ -1,6 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { Attachment, AttachmentType } from '../entities/attachment.entity';
 import * as sharp from 'sharp';
 import * as path from 'path';
@@ -18,6 +20,8 @@ export class UploadsService {
   constructor(
     @InjectRepository(Attachment)
     private readonly attachmentRepo: Repository<Attachment>,
+    @InjectQueue('file-processing')
+    private readonly fileQueue: Queue,
     private readonly configService: ConfigService,
   ) {
     this.uploadDir = this.configService.get('UPLOAD_DIR', './uploads');
@@ -89,13 +93,14 @@ export class UploadsService {
       metadata.width > this.maxWidth || metadata.height > this.maxHeight;
 
     if (needsResize) {
-      await sharp(file.path)
-        .resize(this.maxWidth, this.maxHeight, {
-          fit: 'inside',
-          withoutEnlargement: true,
-        })
-        .toFile(destPath);
-      await fs.unlink(file.path);
+      // offload resize to Bull queue for heavy images
+      const job = await this.fileQueue.add('resize-image', {
+        inputPath: file.path,
+        outputPath: destPath,
+        maxWidth: this.maxWidth,
+        maxHeight: this.maxHeight,
+      });
+      await job.finished();
     } else {
       await fs.rename(file.path, destPath);
     }
