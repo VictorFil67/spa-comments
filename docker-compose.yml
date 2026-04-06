@@ -18,7 +18,7 @@ services:
     image: redis:7-alpine
     container_name: spa-comments-redis
     ports:
-      - '6379:6379'
+      - '6380:6379'
     volumes:
       - redis_data:/data
     restart: unless-stopped
@@ -37,7 +37,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: 3010
-      CORS_ORIGIN: http://localhost:5173
+      CORS_ORIGIN: http://localhost
     ports:
       - '3010:3010'
     depends_on:
@@ -45,6 +45,20 @@ services:
       - redis
     volumes:
       - upload_data:/app/uploads
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_WS_URL: ''
+    container_name: spa-comments-frontend
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:
