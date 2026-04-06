@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { PaginatedResponse, CaptchaResponse, SortBy, SortOrder } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3010/api';
+const API_URL = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:3010/api' : '/api');
 
 const api = axios.create({ baseURL: API_URL });
 
@@ -28,6 +29,9 @@ export async function fetchCaptcha(): Promise<CaptchaResponse> {
 }
 
 export function getFileUrl(filePath: string): string {
+  if (API_URL.startsWith('/')) {
+    return filePath;
+  }
   const base = API_URL.replace('/api', '');
   return `${base}${filePath}`;
 }
