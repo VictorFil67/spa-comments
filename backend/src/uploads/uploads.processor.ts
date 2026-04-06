@@ -18,7 +18,7 @@ export class UploadsProcessor {
     const { inputPath, outputPath, maxWidth, maxHeight } = job.data;
 
     await sharp(inputPath)
-      .resize(maxWidth, maxHeight, {
+      .resize(Number(maxWidth), Number(maxHeight), {
         fit: 'inside',
         withoutEnlargement: true,
       })

@@ -5,13 +5,17 @@ import { redisStore } from 'cache-manager-redis-yet';
 export async function cacheConfig(
   configService: ConfigService,
 ): Promise<CacheModuleOptions> {
-  return {
-    store: await redisStore({
+  try {
+    const store = await redisStore({
       socket: {
         host: configService.get('REDIS_HOST', 'localhost'),
         port: configService.get<number>('REDIS_PORT', 6379),
+        connectTimeout: 3000,
       },
-    }),
-    ttl: 60 * 1000, // 60 seconds
-  };
+    });
+    return { store, ttl: 60 * 1000 };
+  } catch {
+    // fallback to in-memory cache if Redis is unavailable
+    return { ttl: 60 * 1000 };
+  }
 }

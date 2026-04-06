@@ -8,6 +8,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateCommentDto {
   @IsString()
@@ -33,6 +34,7 @@ export class CreateCommentDto {
   text: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   parentId?: number;
 
