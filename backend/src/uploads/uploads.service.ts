@@ -25,9 +25,9 @@ export class UploadsService {
     private readonly configService: ConfigService,
   ) {
     this.uploadDir = this.configService.get('UPLOAD_DIR', './uploads');
-    this.maxWidth = this.configService.get('MAX_IMAGE_WIDTH', 320);
-    this.maxHeight = this.configService.get('MAX_IMAGE_HEIGHT', 240);
-    this.maxTextSize = this.configService.get('MAX_TEXT_FILE_SIZE', 102400);
+    this.maxWidth = Number(this.configService.get('MAX_IMAGE_WIDTH', 320));
+    this.maxHeight = Number(this.configService.get('MAX_IMAGE_HEIGHT', 240));
+    this.maxTextSize = Number(this.configService.get('MAX_TEXT_FILE_SIZE', 102400));
   }
 
   async processUpload(
