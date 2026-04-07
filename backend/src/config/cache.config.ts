@@ -12,6 +12,9 @@ export async function cacheConfig(
         port: configService.get<number>('REDIS_PORT', 6379),
         connectTimeout: 3000,
       },
+      ...(configService.get('REDIS_PASSWORD') && {
+        password: configService.get('REDIS_PASSWORD'),
+      }),
     });
     return { store, ttl: 60 * 1000 };
   } catch {

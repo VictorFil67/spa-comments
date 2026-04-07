@@ -46,6 +46,9 @@ import { Attachment } from './entities/attachment.entity';
         redis: {
           host: config.get('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
+          ...(config.get('REDIS_PASSWORD') && {
+            password: config.get('REDIS_PASSWORD'),
+          }),
         },
       }),
     }),
